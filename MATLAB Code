@@ -5,6 +5,7 @@ classdef app1finallll < matlab.apps.AppBase
         UIFigure                   matlab.ui.Figure
         GridLayout                 matlab.ui.container.GridLayout
         LeftPanel                  matlab.ui.container.Panel
+        Lamp                       matlab.ui.control.Lamp
         phaseLagLead               matlab.ui.control.DropDown
         freqDropDown               matlab.ui.control.DropDown
         degreeLabel                matlab.ui.control.Label
@@ -135,9 +136,11 @@ classdef app1finallll < matlab.apps.AppBase
             if pw == "Off"
                 cla(app.UIAxes);
                 app.phaseLagLead.Value = 'Lagging';
+                app.Lamp.Color = 'r';
             end
             
-            if pw == "On" 
+            if pw == "On"
+                app.Lamp.Color = 'g';
                 
                 % unit time/div dropdown
            
@@ -356,7 +359,7 @@ classdef app1finallll < matlab.apps.AppBase
             app.FunctionGeneratorLabel = uilabel(app.LeftPanel);
             app.FunctionGeneratorLabel.HorizontalAlignment = 'center';
             app.FunctionGeneratorLabel.FontWeight = 'bold';
-            app.FunctionGeneratorLabel.Position = [71 398 117 22];
+            app.FunctionGeneratorLabel.Position = [95 402 117 22];
             app.FunctionGeneratorLabel.Text = 'Function Generator';
 
             % Create VLabel
@@ -476,6 +479,11 @@ classdef app1finallll < matlab.apps.AppBase
             app.phaseLagLead.ValueChangedFcn = createCallbackFcn(app, @phaseLagLeadValueChanged, true);
             app.phaseLagLead.Position = [148 197 78 22];
             app.phaseLagLead.Value = 'Lagging';
+
+            % Create Lamp
+            app.Lamp = uilamp(app.LeftPanel);
+            app.Lamp.Position = [187 69 18 18];
+            app.Lamp.Color = [1 0 0];
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
