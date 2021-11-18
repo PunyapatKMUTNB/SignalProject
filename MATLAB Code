@@ -5,6 +5,8 @@ classdef app1finallll < matlab.apps.AppBase
         UIFigure                   matlab.ui.Figure
         GridLayout                 matlab.ui.container.GridLayout
         LeftPanel                  matlab.ui.container.Panel
+        phaseLagLead               matlab.ui.control.DropDown
+        freqDropDown               matlab.ui.control.DropDown
         degreeLabel                matlab.ui.control.Label
         phaseEditField             matlab.ui.control.NumericEditField
         phaseEditFieldLabel        matlab.ui.control.Label
@@ -22,7 +24,6 @@ classdef app1finallll < matlab.apps.AppBase
         voltdivLabel               matlab.ui.control.Label
         VLabel_2                   matlab.ui.control.Label
         VLabel                     matlab.ui.control.Label
-        HzLabel                    matlab.ui.control.Label
         FunctionGeneratorLabel     matlab.ui.control.Label
         powerSwitch                matlab.ui.control.Switch
         powerSwitchLabel           matlab.ui.control.Label
@@ -37,20 +38,9 @@ classdef app1finallll < matlab.apps.AppBase
         onePanelWidth = 576;
     end
 
-    % Callbacks that handle component events
-    methods (Access = private)
-
-        % Value changed function: powerSwitch
-        function powerSwitchValueChanged(app, event)
-            % Check power
-            pw = string(app.powerSwitch.Value);
-            
-            if pw == "Off"
-                cla(app.UIAxes);
-            end
-            
-            if pw == "On"
-                % unit time/div dropdown
+    methods (Access = public)
+        
+        function [utime] = unitvalue(app)
                 uputime = app.unittime.Value;
                 if uputime == "Gs"
                     utime = 10^9;
@@ -76,28 +66,9 @@ classdef app1finallll < matlab.apps.AppBase
                 if uputime == "ps"
                     utime = 10^(-12);
                 end
-                 
-                % unit time/div dropdown
-                
-                %syms t N real;
-                tidi = app.timediv.Value * utime;
-                f = app.frequency.Value;
-                Amp =  app.amplitude.Value;
-                offset = app.DCoffset.Value;
-                
-                T = 1/f;
-                omega = 2*pi/T;
-                %N = 2^10;
-                K = 100;
-                
-                % function dropdown
-                ft = app.functionDropDown.Value;
-                
-                % phase degree
-                ps = app.phaseEditField.Value;
-                ps = ps*((2*pi)/360);
-                
-                
+        end
+        
+        function [vidi] = voltdivValue(app)
                 vd = app.unitvolt.Value;
                 if vd == "GV"
                     vidi = 10^9;
@@ -123,14 +94,84 @@ classdef app1finallll < matlab.apps.AppBase
                 if vd == "pV"
                     vidi = 10^(-12);
                 end
+        end
+        function [fq] = freqValue(app)
+                f = app.freqDropDown.Value;
+                if f == "GHz"
+                    fq = 10^9;
+                end
+                if f == "MHz"
+                    fq = 10^6;
+                end
+                if f == "kHz"
+                    fq = 10^3;
+                end
+                if f == "Hz"
+                    fq = 10^0;
+                end
+                if f == "mHz"
+                    fq = 10^(-3);
+                end
+                if f == "uHz"
+                    fq = 10^(-6);
+                end
+                if f == "nHz"
+                    fq = 10^(-9);
+                end
+                if f == "pHz"
+                   fq = 10^(-12);
+                end
+        end
+    end
+
+    % Callbacks that handle component events
+    methods (Access = private)
+
+        % Value changed function: powerSwitch
+        function powerSwitchValueChanged(app, event)
+            % Check power
+            pw = string(app.powerSwitch.Value);
+            
+            if pw == "Off"
+                cla(app.UIAxes);
+                app.phaseLagLead.Value = 'Lagging';
+            end
+            
+            if pw == "On" 
+                
+                % unit time/div dropdown
+           
+                ut = unitvalue(app);
+                tidi = app.timediv.Value * ut;
+                Amp =  app.amplitude.Value;
+                offset = app.DCoffset.Value;
+                
+                % unit frequency dropdown
+                fre = freqValue(app);
+                frq = app.frequency.Value*fre;
+                T = 1/frq;
+                
+                omega = 2*pi/T;
+                %N = 2^10;
+                K = 100;
+                
+                % function dropdown
+                ft = app.functionDropDown.Value;
+                
+                % phase degree
+                ps = app.phaseEditField.Value;
+                ps = ps*(pi/180);
+                LagLead = app.phaseLagLead.Value;
+                if LagLead == "Lagging"
+                    ps = ps*(-1);
+                end
                 
                 % volt/div
-                voltd = app.voltdiv.Value;
-                voltd= voltd*vidi;
+                vod = voltdivValue(app);
+                voltd = app.voltdiv.Value*vod;
                 app.UIAxes.YLim = [(-1)*voltd voltd];
                 
                 if ft == "sine"
-                    
                     t = 0:1/(2^20):tidi;
                     y = Amp*sin(omega*t+ps) + offset;
                     plot(app.UIAxes, t, y);
@@ -159,10 +200,19 @@ classdef app1finallll < matlab.apps.AppBase
                     t = 0:1/(2^20):tidi;
                     for k=1:1:K
                         y  = y + (-Amp/(k*pi)*sin((k*omega*t)+(ps*k)));
+                        %y = y + (-Amp/(pi*k))*sin((k*omega*t)+(ps*k));
                         plot(app.UIAxes, t, y + offset);
                     end
                 end
                 
+                if ft == "Full-wave rectified"
+                    y = (2*Amp)/pi;
+                    t = 0:1/(2^20):tidi;
+                    for k=1:1:K
+                        y  = y + (-4*Amp/(((4*k^2)-1)*pi))*cos((k*omega*t)+(ps*k));
+                        plot(app.UIAxes, t, y + offset);
+                    end
+                end
             end
         end
 
@@ -220,6 +270,18 @@ classdef app1finallll < matlab.apps.AppBase
             powerSwitchValueChanged(app, event);
         end
 
+        % Value changed function: freqDropDown
+        function freqDropDownValueChanged(app, event)
+            %value = app.freqDropDown.Value;
+            powerSwitchValueChanged(app, event);
+        end
+
+        % Value changed function: phaseLagLead
+        function phaseLagLeadValueChanged(app, event)
+            %value = app.phaseLagLead.Value;
+            powerSwitchValueChanged(app, event);
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateufreq(app, event)
             currentFigureWidth = app.UIFigure.Position(3);
@@ -232,7 +294,7 @@ classdef app1finallll < matlab.apps.AppBase
             else
                 % Change to a 1x2 grid
                 app.GridLayout.RowHeight = {'1x'};
-                app.GridLayout.ColumnWidth = {274, '1x'};
+                app.GridLayout.ColumnWidth = {298, '1x'};
                 app.RightPanel.Layout.Row = 1;
                 app.RightPanel.Layout.Column = 2;
             end
@@ -254,7 +316,7 @@ classdef app1finallll < matlab.apps.AppBase
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.UIFigure);
-            app.GridLayout.ColumnWidth = {274, '1x'};
+            app.GridLayout.ColumnWidth = {298, '1x'};
             app.GridLayout.RowHeight = {'1x'};
             app.GridLayout.ColumnSpacing = 0;
             app.GridLayout.RowSpacing = 0;
@@ -274,7 +336,7 @@ classdef app1finallll < matlab.apps.AppBase
 
             % Create functionDropDown
             app.functionDropDown = uidropdown(app.LeftPanel);
-            app.functionDropDown.Items = {'sine', 'square', 'triangular', 'sawtooth'};
+            app.functionDropDown.Items = {'sine', 'square', 'triangular', 'sawtooth', 'Full-wave rectified'};
             app.functionDropDown.ValueChangedFcn = createCallbackFcn(app, @functionDropDownValueChanged, true);
             app.functionDropDown.Position = [110 348 100 22];
             app.functionDropDown.Value = 'sine';
@@ -297,22 +359,16 @@ classdef app1finallll < matlab.apps.AppBase
             app.FunctionGeneratorLabel.Position = [71 398 117 22];
             app.FunctionGeneratorLabel.Text = 'Function Generator';
 
-            % Create HzLabel
-            app.HzLabel = uilabel(app.LeftPanel);
-            app.HzLabel.HorizontalAlignment = 'center';
-            app.HzLabel.Position = [190 294 25 22];
-            app.HzLabel.Text = 'Hz';
-
             % Create VLabel
             app.VLabel = uilabel(app.LeftPanel);
             app.VLabel.HorizontalAlignment = 'center';
-            app.VLabel.Position = [189 262 25 22];
+            app.VLabel.Position = [201 275 25 22];
             app.VLabel.Text = 'V';
 
             % Create VLabel_2
             app.VLabel_2 = uilabel(app.LeftPanel);
             app.VLabel_2.HorizontalAlignment = 'center';
-            app.VLabel_2.Position = [189 231 25 22];
+            app.VLabel_2.Position = [201 244 25 22];
             app.VLabel_2.Text = 'V';
 
             % Create voltdivLabel
@@ -351,39 +407,38 @@ classdef app1finallll < matlab.apps.AppBase
             % Create frequencyEditFieldLabel_3
             app.frequencyEditFieldLabel_3 = uilabel(app.LeftPanel);
             app.frequencyEditFieldLabel_3.HorizontalAlignment = 'right';
-            app.frequencyEditFieldLabel_3.Position = [26 294 58 22];
+            app.frequencyEditFieldLabel_3.Position = [38 307 58 22];
             app.frequencyEditFieldLabel_3.Text = 'frequency';
 
             % Create frequency
             app.frequency = uieditfield(app.LeftPanel, 'numeric');
             app.frequency.Limits = [0 Inf];
             app.frequency.ValueChangedFcn = createCallbackFcn(app, @frequencyValueChanged, true);
-            app.frequency.Position = [90 294 100 22];
+            app.frequency.Position = [102 307 100 22];
             app.frequency.Value = 1000;
 
             % Create amplitudeEditFieldLabel_3
             app.amplitudeEditFieldLabel_3 = uilabel(app.LeftPanel);
             app.amplitudeEditFieldLabel_3.HorizontalAlignment = 'right';
-            app.amplitudeEditFieldLabel_3.Position = [26 262 58 22];
+            app.amplitudeEditFieldLabel_3.Position = [38 275 58 22];
             app.amplitudeEditFieldLabel_3.Text = 'amplitude';
 
             % Create amplitude
             app.amplitude = uieditfield(app.LeftPanel, 'numeric');
-            app.amplitude.Limits = [0 Inf];
             app.amplitude.ValueChangedFcn = createCallbackFcn(app, @amplitudeValueChanged, true);
-            app.amplitude.Position = [90 262 100 22];
+            app.amplitude.Position = [102 275 100 22];
             app.amplitude.Value = 1;
 
             % Create DCoffsetEditFieldLabel_3
             app.DCoffsetEditFieldLabel_3 = uilabel(app.LeftPanel);
             app.DCoffsetEditFieldLabel_3.HorizontalAlignment = 'right';
-            app.DCoffsetEditFieldLabel_3.Position = [29 231 55 22];
+            app.DCoffsetEditFieldLabel_3.Position = [41 244 55 22];
             app.DCoffsetEditFieldLabel_3.Text = 'DC offset';
 
             % Create DCoffset
             app.DCoffset = uieditfield(app.LeftPanel, 'numeric');
             app.DCoffset.ValueChangedFcn = createCallbackFcn(app, @DCoffsetValueChanged, true);
-            app.DCoffset.Position = [90 231 100 22];
+            app.DCoffset.Position = [102 244 100 22];
 
             % Create unittime
             app.unittime = uidropdown(app.LeftPanel);
@@ -395,18 +450,32 @@ classdef app1finallll < matlab.apps.AppBase
             % Create phaseEditFieldLabel
             app.phaseEditFieldLabel = uilabel(app.LeftPanel);
             app.phaseEditFieldLabel.HorizontalAlignment = 'right';
-            app.phaseEditFieldLabel.Position = [37 197 38 22];
+            app.phaseEditFieldLabel.Position = [44 197 38 22];
             app.phaseEditFieldLabel.Text = 'phase';
 
             % Create phaseEditField
             app.phaseEditField = uieditfield(app.LeftPanel, 'numeric');
             app.phaseEditField.ValueChangedFcn = createCallbackFcn(app, @phaseEditFieldValueChanged, true);
-            app.phaseEditField.Position = [90 197 100 22];
+            app.phaseEditField.Position = [91 197 53 22];
 
             % Create degreeLabel
             app.degreeLabel = uilabel(app.LeftPanel);
-            app.degreeLabel.Position = [197 197 43 22];
+            app.degreeLabel.Position = [238 197 43 22];
             app.degreeLabel.Text = 'degree';
+
+            % Create freqDropDown
+            app.freqDropDown = uidropdown(app.LeftPanel);
+            app.freqDropDown.Items = {'GHz', 'MHz', 'kHz', 'Hz', 'mHz', 'uHz', 'nHz', 'pHz'};
+            app.freqDropDown.ValueChangedFcn = createCallbackFcn(app, @freqDropDownValueChanged, true);
+            app.freqDropDown.Position = [209 307 57 20];
+            app.freqDropDown.Value = 'Hz';
+
+            % Create phaseLagLead
+            app.phaseLagLead = uidropdown(app.LeftPanel);
+            app.phaseLagLead.Items = {'Lagging', 'Leading'};
+            app.phaseLagLead.ValueChangedFcn = createCallbackFcn(app, @phaseLagLeadValueChanged, true);
+            app.phaseLagLead.Position = [148 197 78 22];
+            app.phaseLagLead.Value = 'Lagging';
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
@@ -421,7 +490,7 @@ classdef app1finallll < matlab.apps.AppBase
             zlabel(app.UIAxes, 'Z')
             app.UIAxes.XGrid = 'on';
             app.UIAxes.YGrid = 'on';
-            app.UIAxes.Position = [37 37 615 386];
+            app.UIAxes.Position = [26 38 615 386];
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
