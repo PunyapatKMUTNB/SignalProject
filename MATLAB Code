@@ -1,0 +1,455 @@
+classdef app1finallll < matlab.apps.AppBase
+
+    % Properties that correspond to app components
+    properties (Access = public)
+        UIFigure                   matlab.ui.Figure
+        GridLayout                 matlab.ui.container.GridLayout
+        LeftPanel                  matlab.ui.container.Panel
+        degreeLabel                matlab.ui.control.Label
+        phaseEditField             matlab.ui.control.NumericEditField
+        phaseEditFieldLabel        matlab.ui.control.Label
+        unittime                   matlab.ui.control.DropDown
+        DCoffset                   matlab.ui.control.NumericEditField
+        DCoffsetEditFieldLabel_3   matlab.ui.control.Label
+        amplitude                  matlab.ui.control.NumericEditField
+        amplitudeEditFieldLabel_3  matlab.ui.control.Label
+        frequency                  matlab.ui.control.NumericEditField
+        frequencyEditFieldLabel_3  matlab.ui.control.Label
+        timediv                    matlab.ui.control.NumericEditField
+        timedivLabel               matlab.ui.control.Label
+        unitvolt                   matlab.ui.control.DropDown
+        voltdiv                    matlab.ui.control.NumericEditField
+        voltdivLabel               matlab.ui.control.Label
+        VLabel_2                   matlab.ui.control.Label
+        VLabel                     matlab.ui.control.Label
+        HzLabel                    matlab.ui.control.Label
+        FunctionGeneratorLabel     matlab.ui.control.Label
+        powerSwitch                matlab.ui.control.Switch
+        powerSwitchLabel           matlab.ui.control.Label
+        functionDropDown           matlab.ui.control.DropDown
+        functionDropDownLabel      matlab.ui.control.Label
+        RightPanel                 matlab.ui.container.Panel
+        UIAxes                     matlab.ui.control.UIAxes
+    end
+
+    % Properties that correspond to apps with auto-reflow
+    properties (Access = private)
+        onePanelWidth = 576;
+    end
+
+    % Callbacks that handle component events
+    methods (Access = private)
+
+        % Value changed function: powerSwitch
+        function powerSwitchValueChanged(app, event)
+            % Check power
+            pw = string(app.powerSwitch.Value);
+            
+            if pw == "Off"
+                cla(app.UIAxes);
+            end
+            
+            if pw == "On"
+                % unit time/div dropdown
+                uputime = app.unittime.Value;
+                if uputime == "Gs"
+                    utime = 10^9;
+                end
+                if uputime == "Ms"
+                    utime = 10^6;
+                end
+                if uputime == "ks"
+                    utime = 10^3;
+                end
+                if uputime == "s"
+                    utime = 10^0;
+                end
+                if uputime == "ms"
+                    utime = 10^(-3);
+                end
+                if uputime == "us"
+                    utime = 10^(-6);
+                end
+                if uputime == "ns"
+                    utime = 10^(-9);
+                end
+                if uputime == "ps"
+                    utime = 10^(-12);
+                end
+                 
+                % unit time/div dropdown
+                
+                %syms t N real;
+                tidi = app.timediv.Value * utime;
+                f = app.frequency.Value;
+                Amp =  app.amplitude.Value;
+                offset = app.DCoffset.Value;
+                
+                T = 1/f;
+                omega = 2*pi/T;
+                %N = 2^10;
+                K = 100;
+                
+                % function dropdown
+                ft = app.functionDropDown.Value;
+                
+                % phase degree
+                ps = app.phaseEditField.Value;
+                ps = ps*((2*pi)/360);
+                
+                
+                vd = app.unitvolt.Value;
+                if vd == "GV"
+                    vidi = 10^9;
+                end
+                if vd == "MV"
+                    vidi = 10^6;
+                end
+                if vd == "kV"
+                    vidi = 10^3;
+                end
+                if vd == "V"
+                    vidi = 10^0;
+                end
+                if vd == "mV"
+                    vidi = 10^(-3);
+                end
+                if vd == "uV"
+                    vidi = 10^(-6);
+                end
+                if vd == "nV"
+                    vidi = 10^(-9);
+                end
+                if vd == "pV"
+                    vidi = 10^(-12);
+                end
+                
+                % volt/div
+                voltd = app.voltdiv.Value;
+                voltd= voltd*vidi;
+                app.UIAxes.YLim = [(-1)*voltd voltd];
+                
+                if ft == "sine"
+                    
+                    t = 0:1/(2^20):tidi;
+                    y = Amp*sin(omega*t+ps) + offset;
+                    plot(app.UIAxes, t, y);
+                end
+                
+                if ft == "square"
+                    y = 0;
+                    t = 0:1/(2^20):tidi;
+                    for k=1:2:K
+                        y = y + ((Amp*4/pi)*sin((k*omega*t)+(ps*k))/k);
+                        plot(app.UIAxes, t, y + offset);
+                    end
+                end
+                
+                if ft == "triangular"
+                    y = Amp/2;
+                    t = 0:1/(2^20):tidi;
+                    for k=1:2:K
+                        y  = y + ((-4*Amp/(k*pi)^2)*cos((k*omega*t)+(ps*k)));
+                        plot(app.UIAxes, t, y + offset);
+                    end
+                end
+                
+                if ft == "sawtooth"
+                    y = Amp/2;
+                    t = 0:1/(2^20):tidi;
+                    for k=1:1:K
+                        y  = y + (-Amp/(k*pi)*sin((k*omega*t)+(ps*k)));
+                        plot(app.UIAxes, t, y + offset);
+                    end
+                end
+                
+            end
+        end
+
+        % Value changed function: frequency
+        function frequencyValueChanged(app, event)
+            %f = app.frequency.Value;
+            powerSwitchValueChanged(app, event);  
+        end
+
+        % Value changed function: functionDropDown
+        function functionDropDownValueChanged(app, event)
+            %value = app.functionDropDown.Value;
+            powerSwitchValueChanged(app, event);
+        end
+
+        % Value changed function: amplitude
+        function amplitudeValueChanged(app, event)
+            %value = app.amplitude.Value;
+            powerSwitchValueChanged(app, event);
+        end
+
+        % Value changed function: DCoffset
+        function DCoffsetValueChanged(app, event)
+            %value = app.DCoffset.Value;
+            powerSwitchValueChanged(app, event);
+        end
+
+        % Value changed function: phaseEditField
+        function phaseEditFieldValueChanged(app, event)
+            %value = app.phaseEditField.Value;
+            powerSwitchValueChanged(app, event);
+        end
+
+        % Value changed function: timediv
+        function timedivValueChanged(app, event)
+            %value = app.timediv.Value;
+            powerSwitchValueChanged(app, event);
+        end
+
+        % Value changed function: unittime
+        function unittimeValueChanged(app, event)
+            %value = app.unittime.Value;
+            powerSwitchValueChanged(app, event);
+        end
+
+        % Value changed function: voltdiv
+        function voltdivValueChanged(app, event)
+            %value = app.voltdiv.Value;
+            powerSwitchValueChanged(app, event);
+        end
+
+        % Value changed function: unitvolt
+        function unitvoltValueChanged(app, event)
+            %value = app.unitvolt.Value;
+            powerSwitchValueChanged(app, event);
+        end
+
+        % Changes arrangement of the app based on UIFigure width
+        function updateufreq(app, event)
+            currentFigureWidth = app.UIFigure.Position(3);
+            if(currentFigureWidth <= app.onePanelWidth)
+                % Change to a 2x1 grid
+                app.GridLayout.RowHeight = {460, 460};
+                app.GridLayout.ColumnWidth = {'1x'};
+                app.RightPanel.Layout.Row = 2;
+                app.RightPanel.Layout.Column = 1;
+            else
+                % Change to a 1x2 grid
+                app.GridLayout.RowHeight = {'1x'};
+                app.GridLayout.ColumnWidth = {274, '1x'};
+                app.RightPanel.Layout.Row = 1;
+                app.RightPanel.Layout.Column = 2;
+            end
+        end
+    end
+
+    % Component initialization
+    methods (Access = private)
+
+        % Create UIFigure and components
+        function createComponents(app)
+
+            % Create UIFigure and hide until all components are created
+            app.UIFigure = uifigure('Visible', 'off');
+            app.UIFigure.AutoResizeChildren = 'off';
+            app.UIFigure.Position = [100 100 964 460];
+            app.UIFigure.Name = 'MATLAB App';
+            app.UIFigure.SizeChangedFcn = createCallbackFcn(app, @updateufreq, true);
+
+            % Create GridLayout
+            app.GridLayout = uigridlayout(app.UIFigure);
+            app.GridLayout.ColumnWidth = {274, '1x'};
+            app.GridLayout.RowHeight = {'1x'};
+            app.GridLayout.ColumnSpacing = 0;
+            app.GridLayout.RowSpacing = 0;
+            app.GridLayout.Padding = [0 0 0 0];
+            app.GridLayout.Scrollable = 'on';
+
+            % Create LeftPanel
+            app.LeftPanel = uipanel(app.GridLayout);
+            app.LeftPanel.Layout.Row = 1;
+            app.LeftPanel.Layout.Column = 1;
+
+            % Create functionDropDownLabel
+            app.functionDropDownLabel = uilabel(app.LeftPanel);
+            app.functionDropDownLabel.HorizontalAlignment = 'right';
+            app.functionDropDownLabel.Position = [49 348 47 22];
+            app.functionDropDownLabel.Text = 'function';
+
+            % Create functionDropDown
+            app.functionDropDown = uidropdown(app.LeftPanel);
+            app.functionDropDown.Items = {'sine', 'square', 'triangular', 'sawtooth'};
+            app.functionDropDown.ValueChangedFcn = createCallbackFcn(app, @functionDropDownValueChanged, true);
+            app.functionDropDown.Position = [110 348 100 22];
+            app.functionDropDown.Value = 'sine';
+
+            % Create powerSwitchLabel
+            app.powerSwitchLabel = uilabel(app.LeftPanel);
+            app.powerSwitchLabel.HorizontalAlignment = 'center';
+            app.powerSwitchLabel.Position = [118 42 38 20];
+            app.powerSwitchLabel.Text = 'power';
+
+            % Create powerSwitch
+            app.powerSwitch = uiswitch(app.LeftPanel, 'slider');
+            app.powerSwitch.ValueChangedFcn = createCallbackFcn(app, @powerSwitchValueChanged, true);
+            app.powerSwitch.Position = [120 71 34 15];
+
+            % Create FunctionGeneratorLabel
+            app.FunctionGeneratorLabel = uilabel(app.LeftPanel);
+            app.FunctionGeneratorLabel.HorizontalAlignment = 'center';
+            app.FunctionGeneratorLabel.FontWeight = 'bold';
+            app.FunctionGeneratorLabel.Position = [71 398 117 22];
+            app.FunctionGeneratorLabel.Text = 'Function Generator';
+
+            % Create HzLabel
+            app.HzLabel = uilabel(app.LeftPanel);
+            app.HzLabel.HorizontalAlignment = 'center';
+            app.HzLabel.Position = [190 294 25 22];
+            app.HzLabel.Text = 'Hz';
+
+            % Create VLabel
+            app.VLabel = uilabel(app.LeftPanel);
+            app.VLabel.HorizontalAlignment = 'center';
+            app.VLabel.Position = [189 262 25 22];
+            app.VLabel.Text = 'V';
+
+            % Create VLabel_2
+            app.VLabel_2 = uilabel(app.LeftPanel);
+            app.VLabel_2.HorizontalAlignment = 'center';
+            app.VLabel_2.Position = [189 231 25 22];
+            app.VLabel_2.Text = 'V';
+
+            % Create voltdivLabel
+            app.voltdivLabel = uilabel(app.LeftPanel);
+            app.voltdivLabel.HorizontalAlignment = 'right';
+            app.voltdivLabel.Position = [33 147 43 22];
+            app.voltdivLabel.Text = 'volt/div';
+
+            % Create voltdiv
+            app.voltdiv = uieditfield(app.LeftPanel, 'numeric');
+            app.voltdiv.Limits = [1 1000];
+            app.voltdiv.ValueChangedFcn = createCallbackFcn(app, @voltdivValueChanged, true);
+            app.voltdiv.Position = [80 147 100 22];
+            app.voltdiv.Value = 1;
+
+            % Create unitvolt
+            app.unitvolt = uidropdown(app.LeftPanel);
+            app.unitvolt.Items = {'GV', 'MV', 'kV', 'V', 'mV', 'uV', 'nV', 'pV'};
+            app.unitvolt.ValueChangedFcn = createCallbackFcn(app, @unitvoltValueChanged, true);
+            app.unitvolt.Position = [187 147 54 22];
+            app.unitvolt.Value = 'V';
+
+            % Create timedivLabel
+            app.timedivLabel = uilabel(app.LeftPanel);
+            app.timedivLabel.HorizontalAlignment = 'right';
+            app.timedivLabel.Position = [29 118 47 22];
+            app.timedivLabel.Text = 'time/div';
+
+            % Create timediv
+            app.timediv = uieditfield(app.LeftPanel, 'numeric');
+            app.timediv.Limits = [1 1000];
+            app.timediv.ValueChangedFcn = createCallbackFcn(app, @timedivValueChanged, true);
+            app.timediv.Position = [80 118 100 22];
+            app.timediv.Value = 1;
+
+            % Create frequencyEditFieldLabel_3
+            app.frequencyEditFieldLabel_3 = uilabel(app.LeftPanel);
+            app.frequencyEditFieldLabel_3.HorizontalAlignment = 'right';
+            app.frequencyEditFieldLabel_3.Position = [26 294 58 22];
+            app.frequencyEditFieldLabel_3.Text = 'frequency';
+
+            % Create frequency
+            app.frequency = uieditfield(app.LeftPanel, 'numeric');
+            app.frequency.Limits = [0 Inf];
+            app.frequency.ValueChangedFcn = createCallbackFcn(app, @frequencyValueChanged, true);
+            app.frequency.Position = [90 294 100 22];
+            app.frequency.Value = 1000;
+
+            % Create amplitudeEditFieldLabel_3
+            app.amplitudeEditFieldLabel_3 = uilabel(app.LeftPanel);
+            app.amplitudeEditFieldLabel_3.HorizontalAlignment = 'right';
+            app.amplitudeEditFieldLabel_3.Position = [26 262 58 22];
+            app.amplitudeEditFieldLabel_3.Text = 'amplitude';
+
+            % Create amplitude
+            app.amplitude = uieditfield(app.LeftPanel, 'numeric');
+            app.amplitude.Limits = [0 Inf];
+            app.amplitude.ValueChangedFcn = createCallbackFcn(app, @amplitudeValueChanged, true);
+            app.amplitude.Position = [90 262 100 22];
+            app.amplitude.Value = 1;
+
+            % Create DCoffsetEditFieldLabel_3
+            app.DCoffsetEditFieldLabel_3 = uilabel(app.LeftPanel);
+            app.DCoffsetEditFieldLabel_3.HorizontalAlignment = 'right';
+            app.DCoffsetEditFieldLabel_3.Position = [29 231 55 22];
+            app.DCoffsetEditFieldLabel_3.Text = 'DC offset';
+
+            % Create DCoffset
+            app.DCoffset = uieditfield(app.LeftPanel, 'numeric');
+            app.DCoffset.ValueChangedFcn = createCallbackFcn(app, @DCoffsetValueChanged, true);
+            app.DCoffset.Position = [90 231 100 22];
+
+            % Create unittime
+            app.unittime = uidropdown(app.LeftPanel);
+            app.unittime.Items = {'Gs', 'Ms', 'ks', 's', 'ms', 'us', 'ns', 'ps'};
+            app.unittime.ValueChangedFcn = createCallbackFcn(app, @unittimeValueChanged, true);
+            app.unittime.Position = [187 118 54 22];
+            app.unittime.Value = 'ms';
+
+            % Create phaseEditFieldLabel
+            app.phaseEditFieldLabel = uilabel(app.LeftPanel);
+            app.phaseEditFieldLabel.HorizontalAlignment = 'right';
+            app.phaseEditFieldLabel.Position = [37 197 38 22];
+            app.phaseEditFieldLabel.Text = 'phase';
+
+            % Create phaseEditField
+            app.phaseEditField = uieditfield(app.LeftPanel, 'numeric');
+            app.phaseEditField.ValueChangedFcn = createCallbackFcn(app, @phaseEditFieldValueChanged, true);
+            app.phaseEditField.Position = [90 197 100 22];
+
+            % Create degreeLabel
+            app.degreeLabel = uilabel(app.LeftPanel);
+            app.degreeLabel.Position = [197 197 43 22];
+            app.degreeLabel.Text = 'degree';
+
+            % Create RightPanel
+            app.RightPanel = uipanel(app.GridLayout);
+            app.RightPanel.Layout.Row = 1;
+            app.RightPanel.Layout.Column = 2;
+
+            % Create UIAxes
+            app.UIAxes = uiaxes(app.RightPanel);
+            title(app.UIAxes, 'graph')
+            xlabel(app.UIAxes, 'Time (s)')
+            ylabel(app.UIAxes, 'Voltage (V)')
+            zlabel(app.UIAxes, 'Z')
+            app.UIAxes.XGrid = 'on';
+            app.UIAxes.YGrid = 'on';
+            app.UIAxes.Position = [37 37 615 386];
+
+            % Show the figure after all components are created
+            app.UIFigure.Visible = 'on';
+        end
+    end
+
+    % App creation and deletion
+    methods (Access = public)
+
+        % Construct app
+        function app = app1finallll
+
+            % Create UIFigure and components
+            createComponents(app)
+
+            % Register the app with App Designer
+            registerApp(app, app.UIFigure)
+
+            if nargout == 0
+                clear app
+            end
+        end
+
+        % Code that executes before app deletion
+        function delete(app)
+
+            % Delete UIFigure when app is deleted
+            delete(app.UIFigure)
+        end
+    end
+end
