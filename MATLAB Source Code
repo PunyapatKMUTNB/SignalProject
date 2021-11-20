@@ -1,4 +1,4 @@
-classdef app1finallll < matlab.apps.AppBase
+classdef Topic1App < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
@@ -415,7 +415,7 @@ classdef app1finallll < matlab.apps.AppBase
 
             % Create frequency
             app.frequency = uieditfield(app.LeftPanel, 'numeric');
-            app.frequency.Limits = [0 Inf];
+            app.frequency.Limits = [1 Inf];
             app.frequency.ValueChangedFcn = createCallbackFcn(app, @frequencyValueChanged, true);
             app.frequency.Position = [102 307 100 22];
             app.frequency.Value = 1000;
@@ -428,6 +428,7 @@ classdef app1finallll < matlab.apps.AppBase
 
             % Create amplitude
             app.amplitude = uieditfield(app.LeftPanel, 'numeric');
+            app.amplitude.Limits = [0 Inf];
             app.amplitude.ValueChangedFcn = createCallbackFcn(app, @amplitudeValueChanged, true);
             app.amplitude.Position = [102 275 100 22];
             app.amplitude.Value = 1;
@@ -509,7 +510,7 @@ classdef app1finallll < matlab.apps.AppBase
     methods (Access = public)
 
         % Construct app
-        function app = app1finallll
+        function app = Topic1App
 
             % Create UIFigure and components
             createComponents(app)
